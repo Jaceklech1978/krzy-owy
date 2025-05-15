@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aparat Krzyżowy</title>
+  <style>
+    body {
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: sans-serif;
+    }
+    canvas {
+      border: 2px solid #000;
+    }
+    #message {
+      margin-top: 20px;
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="600" height="600"></canvas>
+  <div id="message">Naciśnij odpowiedni klawisz, gdy pojawi się czerwony punkt.</div>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const positions = {
+      center: [300, 300],
+      up: [300, 150],
+      down: [300, 450],
+      left: [150, 300],
+      right: [450, 300]
+    };
+    const keyMap = {
+      ' ': 'center',
+      'w': 'up',
+      's': 'down',
+      'a': 'left',
+      'd': 'right'
+    };
+    let currentTarget = null;
+    let startTime = null;
+    let results = [];
+    let round = 0;
+    const totalRounds = 10;
+
+    function drawCross() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = 'black';
+      for (const pos of Object.values(positions)) {
+        ctx.beginPath();
+        ctx.arc(pos[0], pos[1], 30, 0, 2 * Math.PI);
+        ctx.stroke();
+      }
+    }
+
+    function showTarget() {
+      currentTarget = randomTarget();
+      const [x, y] = positions[currentTarget];
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(x, y, 30, 0, 2 * Math.PI);
+      ctx.fill();
+      startTime = performance.now();
+    }
+
+    function randomTarget() {
+      const keys = Object.keys(positions);
+      return keys[Math.floor(Math.random() * keys.length)];
+    }
+
+    function nextRound() {
+      if (round >= totalRounds) {
+        endTest();
+        return;
+      }
+      round++;
+      drawCross();
+      setTimeout(() => {
+        showTarget();
+      }, Math.random() * 1500 + 1000);
+    }
+
+    function endTest() {
+      drawCross();
+      ctx.fillStyle = 'black';
+      ctx.font = '18px sans-serif';
+      ctx.fillText("Test zakończony. Wyniki:", 20, 50);
+      let y = 80;
+      results.forEach((res, i) => {
+        ctx.fillText(`Runda ${i+1}: ${res.correct ? 'OK' : 'ZŁY'} | czas: ${res.time.toFixed(2)} ms`, 20, y);
+        y += 30;
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (!currentTarget) return;
+      const response = keyMap[e.key.toLowerCase()];
+      if (!response) return;
+      const reactionTime = performance.now() - startTime;
+      const correct = response === currentTarget;
+      results.push({ target: currentTarget, response, time: reactionTime, correct });
+      currentTarget = null;
+      document.getElementById('message').textContent =
+        `Runda ${round}: ${correct ? 'OK' : 'ZŁY'} | czas: ${reactionTime.toFixed(2)} ms`;
+      setTimeout(nextRound, 1000);
+    });
+
+    drawCross();
+    setTimeout(nextRound, 1000);
+  </script>
+</body>
+</html>
